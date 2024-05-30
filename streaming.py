@@ -32,7 +32,7 @@ spark = SparkSession.builder \
     .config("spark.streaming.stopGracefullyOnShutdown", True) \
     .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1') \
     .config("spark.sql.shuffle.partitions", 4) \
-    .master("spark://mhtuan-HP:7077") \
+    .master("spark://deptrai:7077") \
     .getOrCreate()
 
 
@@ -42,12 +42,10 @@ df = spark.readStream \
     .option("failOnDataLoss", "false") \
     .option("subscribe", "test-url-1204") \
     .load()
+    
 json_df = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING) as msg_value")
-
 json_expanded_df = json_df.withColumn("msg_value", from_json(json_df["msg_value"], json_schema)).select("msg_value.*")
-
 exploded_df = json_expanded_df.select("sslsni", "subscriberid", "hour_key", "count", "up", "down") 
-
 df_with_date = exploded_df.withColumn("inserted_time", current_timestamp())
 
 
