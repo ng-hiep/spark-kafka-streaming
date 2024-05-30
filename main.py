@@ -49,3 +49,22 @@ json_expanded_df = json_df.withColumn("msg_value", from_json(json_df["msg_value"
 exploded_df = json_expanded_df.select("sslsni", "subscriberid", "hour_key", "count", "up", "down") 
 
 df_with_date = exploded_df.withColumn("inserted_time", current_timestamp())
+
+
+def foreach_batch_function(df, epoch_id):
+    df.write \
+        .format("jdbc") \
+        .mode("append") \
+        .option("driver", "com.github.housepower.jdbc.ClickHouseDriver") \
+        .option("url", "jdbc:clickhouse://" + CLICKHOUSE_HOST + ":" + CLICKHOUSE_PORT) \
+        .option("user", CLICKHOUSE_USER) \
+        .option("password", CLICKHOUSE_PASSWORD) \
+        .option("dbtable", "default.raw_url") \
+        .save()
+
+writing_df = df_with_date \
+    .writeStream \
+    .foreachBatch(foreach_batch_function) \
+    .start()
+
+writing_df.awaitTermination()
